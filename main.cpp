@@ -2,20 +2,39 @@
 #include <GLFW/glfw3.h>
 #include <GL/freeglut.h> // Для роботи з GLUT
 
+#include <glm.hpp> 
+
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
 
 
+float scaleDistance = 1.8; // 1 млн км = 1.0 одиниця OpenGL
+float scaleRadius = 1; // 1 тис. км = 1 одиниця OpenGL
 
+// Відстані від Сонця (в одиницях OpenGL)
+float mercuryDistance = 57.9 * scaleDistance;
+float venusDistance = 108.2 * scaleDistance;
+float earthDistance = 149.6 * scaleDistance;
+float marsDistance = 227.9 * scaleDistance;
+float jupiterDistance = 778.6 * scaleDistance;
+float saturnDistance = 1433.5 * scaleDistance;
+float uranusDistance = 2872.5 * scaleDistance;
+float neptuneDistance = 4495.1 * scaleDistance;
 
-
-
-
-
-
-
+// Радіуси планет (в одиницях OpenGL)
+float mercuryRadius = 2.44 * scaleRadius;
+float venusRadius = 6.05 * scaleRadius;
+float earthRadius = 6.37 * scaleRadius;
+float marsRadius = 3.39 * scaleRadius;
+float jupiterRadius = 69.91 * scaleRadius;
+float saturnRadius = 58.23 * scaleRadius;
+float uranusRadius = 25.36 * scaleRadius;
+float neptuneRadius = 24.62 * scaleRadius;
+//Виняток сонце, не пропорційне до справжніх розмірів
+//float sunRadius = 696340 * scaleRadius;
+float sunRadius = 78 * scaleRadius;
 
 
 // Функції завантаження шейдерів та їх компіляції
@@ -111,6 +130,77 @@ GLuint createShaderProgram(const std::string& vertexShaderSource, const std::str
 
     glPopMatrix(); // Відновлюємо трансформацію
 }*/
+
+float cameraX = 0.0f;
+float cameraY = 0.0f;
+float cameraZ = -10.0f;  // Початкове розташування камери
+
+// Змінні для контролю обертання камери
+float angleX = 0.0f;
+float angleY = 0.0f;
+bool mousePressed = false;
+int lastX, lastY;
+
+// Клавіші для переміщення камери
+void keyboard(unsigned char key, int x, int y) {
+    const float moveSpeed = 50.5f;  // Швидкість переміщення камери
+    switch (key) {
+    case 'w': // Вверх
+        cameraZ += moveSpeed;
+        break;
+    case 's': // Вниз
+        cameraZ -= moveSpeed;
+        break;
+    case 'a': // Вліво
+        cameraX += moveSpeed;
+        break;
+    case 'd': // Вправо
+        cameraX -= moveSpeed;
+        break;
+    case 27: // Escape для виходу
+        exit(0);
+        break;
+    }
+    glutPostRedisplay(); // Перерисувати сцену
+}
+
+void mouseMotion(int x, int y) {
+    if (mousePressed) {
+        // Обчислюємо зміщення миші
+        int deltaX = x - lastX;
+        int deltaY = y - lastY;
+
+        // Змінюємо кути обертання камери
+        angleX += deltaY * 0.1f;  // Обертання по осі X
+        angleY += deltaX * 0.1f;  // Обертання по осі Y
+    }
+    lastX = x;
+    lastY = y;
+    glutPostRedisplay(); // Перерисувати сцену
+}
+
+void mouseButton(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON) {
+        if (state == GLUT_DOWN) {
+            mousePressed = true;
+            lastX = x;
+            lastY = y;
+        }
+        else {
+            mousePressed = false;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
 float earthAngle = 0.0f;
 
 // Функція для анімації обертання планет
@@ -123,9 +213,9 @@ void drawSun(float x, float y, float z, float radius) {
 
     // Налаштування параметрів світла (Sonne як точкове джерело світла)
     GLfloat light_position[] = { 0.0f, 0.0f, 0.0f, 1.0f };  // Позиція світла
-    GLfloat light_diffuse[] = { 1.0f, 1.0f, 0.3f, 1.0f };   // Яскраве жовте світло
-    GLfloat light_specular[] = { 1.0f, 1.0f, 0.0f, 1.0f };  // Спекулярне світло
-    GLfloat light_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };   // М'яке навколишнє світло
+    GLfloat light_diffuse[] = { 1.0,1.0,1.0,1.0 };   // Яскраве жовте світло
+    GLfloat light_specular[] = { .50,.50,.50,.10 };  // Спекулярне світло
+    GLfloat light_ambient[] = { 0.1,0.1,0.1,1.0 };   // М'яке навколишнє світло
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);  // Встановлюємо позицію світла
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);    // Дифузне світло
@@ -145,10 +235,12 @@ void drawSun(float x, float y, float z, float radius) {
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);// Гладкість
 
     // Малюємо Сонце (сферу)
-    glutSolidSphere(radius, 30, 30); // Розмір і сегменти сфери
+    glutSolidSphere(sunRadius, 30, 30); // Розмір і сегменти сфери
 
     glPopMatrix();
 }
+
+
 
 
 void drawPlanet(float x, float y, float z, float radius) {
@@ -159,7 +251,7 @@ void drawPlanet(float x, float y, float z, float radius) {
     GLfloat mat_diffuse[] = { 0.0f, 0.0f, 1.0f, 1.0f };   // Синій колір
     GLfloat mat_specular[] = { 0.5f, 0.5f, 1.0f, 1.0f }; // Блиск
     GLfloat mat_emission[] = { 0.0f, 0.0f, 0.3f, 1.0f }; // Легке світіння
-    GLfloat mat_shininess[] = { 80.0f };  // Гладкість
+    GLfloat mat_shininess[] = { 1200.0f };  // Гладкість
 
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);    // Дифузний компонент
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);  // Спекулярний компонент
@@ -174,27 +266,52 @@ void drawPlanet(float x, float y, float z, float radius) {
 
 
 void animatePlanet(float& angle, float radius, float speed) {
+   /*
     angle += speed;  // Збільшуємо кут на задану швидкість
     if (angle > 360.0f) {
         angle -= 360.0f;  // Якщо перевищено 360 градусів, скидаємо до 0
     }
-
+    */
     glPushMatrix();
     glRotatef(angle, 0.0f, 1.0f, 0.0f);  // Обертання планети навколо Сонця
-    glTranslatef(radius, 0.0f, 0.0f);    // Позиціюємо планету на орбіті
+    glTranslatef(radius, 0.0f, 0.0f);    // Позиціюємо планету на орбіті*/
     drawPlanet(0.0f, 0.0f, 0.0f, 0.5f);  // Малюємо планету (використовуємо радіус 0.5)
 
     drawPlanet(2.5f, 0.0f, 0.0f, 0.5f);
     //  drawPlanet(2.5f, 0.5f, 0.0f, 0.4f);
+    glTranslatef(mercuryDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(mercuryRadius, 20, 20);
+
+    glTranslatef(venusDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(venusRadius, 20, 20);
+
+    glTranslatef(earthDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(earthRadius, 20, 20);
+
+    glTranslatef(marsDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(marsRadius, 20, 20);
+
+    glTranslatef(jupiterDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(jupiterRadius, 20, 20);
+
+    glTranslatef(saturnDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(saturnRadius, 20, 20);
+
+    glTranslatef(uranusDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(uranusRadius, 20, 20);
+
+    glTranslatef(neptuneDistance, 0.0f, 0.0f);  // Відстань від Сонця
+    glutSolidSphere(neptuneRadius, 20, 20);
     glPopMatrix();
+
 }
 
 void setupLighting() {
-    /**/glEnable(GL_LIGHTING);   // Увімкнення освітлення
+    glEnable(GL_LIGHTING);   // Увімкнення освітлення
     glEnable(GL_LIGHT0);     // Увімкнення першого джерела світла
-
+    /*
     // Позиція світла (точкове джерело світла в точці 0, 0, 0)
-    GLfloat light_position[] = { 0.0f, 0.0f, 0.0f, 1.0f };  // Точкове світло
+    GLfloat light_position[] = {0.0f, 0.0f, 0.0f, 0.0f};  // Точкове світло
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
     // Параметри світла
@@ -206,7 +323,7 @@ void setupLighting() {
 
     GLfloat light_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };   // Амбієнтне світло (загальне освітлення)
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-
+    */
     glEnable(GL_DEPTH_TEST);  // Увімкнення тесту глибини*/
 }
 
@@ -248,31 +365,17 @@ void drawLine() {
 
     glPopMatrix();
 }
-float cameraPosX = 0.0f, cameraPosY = 0.0f, cameraPosZ = -10.0f;  // Початкові координати камери
-float cameraSpeed = 0.1f;  // Швидкість руху камери
 
 // Функція для обробки вводу з клавіатури
-void keyboard(unsigned char key, int x, int y) {
-    if (key == 'w' || key == 'W') {
-        cameraPosZ += cameraSpeed;  // Переміщуємо камеру вперед
-    }
-    if (key == 's' || key == 'S') {
-        cameraPosZ -= cameraSpeed;  // Переміщуємо камеру назад
-    }
-    if (key == 'a' || key == 'A') {
-        cameraPosX -= cameraSpeed;  // Переміщуємо камеру вліво
-    }
-    if (key == 'd' || key == 'D') {
-        cameraPosX += cameraSpeed;  // Переміщуємо камеру вправо
-    }
-
-    glutPostRedisplay();  // Перемалювати сцену після зміни позиції камери
-}
 void drawRectangle(float x, float y, float z, float width, float height) {
     glPushMatrix();
     glTranslatef(x, y, z);  // Переміщення на задані координати
 
-    // Малювання прямокутника (квадрат)
+    glDisable(GL_DEPTH_TEST);   // Відновити тест глибини
+    glDisable(GL_LIGHTING);     // Включити освітлення
+
+
+    // Малювання прямокутника
     glBegin(GL_QUADS);
     glColor3f(1.0f, 0.0f, 0.0f); // Колір прямокутника (червоний)
     glVertex3f(-width / 2, -height / 2, 0.0f); // Нижній лівий кут
@@ -281,8 +384,14 @@ void drawRectangle(float x, float y, float z, float width, float height) {
     glVertex3f(-width / 2, height / 2, 0.0f);  // Верхній лівий кут
     glEnd();
 
+    // Відновлення налаштувань для інших об'єктів
+    glEnable(GL_DEPTH_TEST);   // Відновити тест глибини
+    glEnable(GL_LIGHTING);     // Включити освітлення
+
     glPopMatrix();
 }
+
+
 
 int main(int argc, char** argv) {
     // Ініціалізація GLUT
@@ -299,36 +408,46 @@ int main(int argc, char** argv) {
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, 1280.0f / 720.0f, 0.1f, 100.0f);
+    gluPerspective(45.0f, 1280.0f / 720.0f, 0.1f, 10000.0f);
 
     glMatrixMode(GL_MODELVIEW);
 
     // Налаштування освітлення
     setupLighting();
+
+    // Реєстрація функцій для клавіатури та миші
     glutKeyboardFunc(keyboard);
+    glutMouseFunc(mouseButton);
+    glutMotionFunc(mouseMotion);
+
     // Основний цикл рендерингу
     while (true) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glLoadIdentity();
-        // Переміщаємо камеру так, щоб вона була над сценою
-        glTranslatef(0.0f, 0.0f, -10.0f);  // Камера знаходиться на відстані 10 одиниць від центру сцени
 
-        // Обертання сцени так, щоб ми бачили планети зверху (по осі X)
-        //glRotatef(90.0f, 1.0f, 0.0f, 0.0f);  // Обертання на 90 градусів навколо осі X
+        // Застосовуємо зміщення камери
+        glTranslatef(cameraX, cameraY, cameraZ);  // Переміщаємо камеру на задану відстань
+
+        // Обертання камери відповідно до кутів
+        glRotatef(angleX, 1.0f, 0.0f, 0.0f);  // Обертання по осі X
+        glRotatef(angleY, 0.0f, 1.0f, 0.0f);  // Обертання по осі Y
 
         // Малюємо Сонце
         drawSun(0.0f, 0.0f, 0.0f, 1.0f);
 
-        drawLine();
+        //drawLine();
         // Анімація планети
         animatePlanet(earthAngle, 2.0f, 0.5f);  // Радіус орбіти = 2.0, швидкість обертання = 0.5
-        drawRectangle(2.0f, -1.0f, -1.0f, 10.0f, 10.5f);
-        glutSwapBuffers();  // Заміна буферів для подвійної буферизації
+       // drawRectangle(2.0f, -1.0f, -1.0f, 10.0f, 10.5f);
 
+        glutSwapBuffers();  // Заміна буферів для подвійної буферизації
         glutMainLoopEvent();  // Обробка подій GLUT
     }
 
     return 0;
 }
+
+
+

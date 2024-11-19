@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\ofreg\Downloads\glfw-3.4.bin.WIN64 %281%29\glfw-3.4.bin.WIN64\include;C:\Users\ofreg\Downloads\glew-2.1.0-win32 %281%29\glew-2.1.0\include;C:\Users\ofreg\Downloads\freeglut-3.6.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\ofreg\Downloads\glm-master\glm-master\glm;C:\Users\ofreg\Downloads\glfw-3.4.bin.WIN64 %281%29\glfw-3.4.bin.WIN64\include;C:\Users\ofreg\Downloads\glew-2.1.0-win32 %281%29\glew-2.1.0\include;C:\Users\ofreg\Downloads\freeglut-3.6.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
